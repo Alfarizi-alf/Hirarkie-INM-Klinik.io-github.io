@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Indikator Mutu Klinik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Slate, Blue, Green, Yellow, Purple) -->
+    <!-- Application Structure Plan: Aplikasi ini dirancang sebagai dasbor satu halaman dengan empat kartu utama yang mewakili setiap indikator mutu. Pendekatan ini memungkinkan pengguna untuk mendapatkan gambaran umum yang cepat. Saat pengguna memerlukan detail, mereka dapat mengklik sebuah kartu untuk membuka jendela modal yang menampilkan profil lengkap indikator tersebut. Struktur ini dipilih karena sangat efisien dalam menyajikan informasi: ringkas di awal, dan detail saat dibutuhkan, tanpa navigasi halaman yang kompleks. Alur ini sangat intuitif dan berorientasi pada tugas untuk pengguna yang ingin memahami atau memverifikasi detail spesifik dari suatu indikator. -->
+    <!-- Visualization & Content Choices: 1. [Ringkasan Indikator] -> Tujuan: Memberikan gambaran cepat & visual tentang target setiap indikator. -> Viz: Kartu (HTML/Tailwind) dengan Donut Chart (Chart.js/Canvas) di dalamnya. -> Interaksi: Klik pada kartu untuk membuka detail. -> Justifikasi: Donut chart adalah cara yang efektif dan hemat ruang untuk memvisualisasikan persentase target. 2. [Detail Indikator] -> Tujuan: Menyajikan seluruh informasi profil secara terstruktur dan mudah dibaca, dengan penekanan yang lebih spesifik pada poin-poin kunci. -> Viz: Tampilan modal dengan daftar definisi (HTML/dl) yang rapi. Poin-poin paling krusial diberi highlight latar belakang, sementara frasa kunci di dalam teks diberi warna berbeda. -> Interaksi: Tombol tutup. -> Justifikasi: Highlight yang lebih spesifik dan bertingkat membantu pengguna membedakan dan fokus pada elemen terpenting untuk pengukuran, meminimalkan risiko kesalahan interpretasi sesuai permintaan. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: white;
+            padding: 1.5rem 2rem 2rem 2rem;
+            border-radius: 0.75rem;
+            max-width: 90vw;
+            width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        .inm-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+        .inm-grid > div {
+            display: contents;
+        }
+        .inm-grid dt, .inm-grid dd {
+            padding: 1rem 0.75rem;
+            border-bottom: 1px solid #f1f5f9; /* slate-100 */
+        }
+        .inm-grid dt {
+            font-weight: 600;
+            color: #475569; /* slate-600 */
+        }
+        .inm-grid dd {
+            color: #1e293b; /* slate-800 */
+        }
+        .highlight-row dt, .highlight-row dd {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #1d4ed8; /* blue-700 */
+            font-weight: 600;
+        }
+        .highlight-list-item {
+            color: #1d4ed8; /* blue-700 */
+            font-weight: 600;
+        }
+
+        @media (min-width: 768px) {
+            .inm-grid {
+                grid-template-columns: 220px 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold">Dasbor Indikator Mutu Klinik</h1>
+            <p class="mt-2 text-lg text-slate-600">Ringkasan Interaktif Profil Indikator Mutu Nasional (INM)</p>
+        </header>
+
+        <main id="dashboard-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Cards will be injected here by JavaScript -->
+        </main>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content" id="modal-content-container">
+            <div class="flex justify-between items-start mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold text-slate-800"></h2>
+                <button id="modal-close-btn" class="text-3xl text-slate-400 hover:text-slate-700 transition">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+<script>
+const indicatorData = {
+    "kebersihan_tangan": {
+        title: "Kepatuhan Kebersihan Tangan",
+        icon: "🧼",
+        targetValue: 85,
+        targetDisplay: "≥85%",
+        dimension: "Keselamatan",
+        color: "#3b82f6",
+        profile: [
+            { term: "Dasar Pemikiran", desc: "<ol class='list-decimal pl-5'><li>Peraturan Menteri Kesehatan mengenai Keselamatan Pasien.</li><li>Peraturan Menteri Kesehatan mengenai Pencegahan dan Pengendalian Infeksi di Fasilitas Pelayanan Kesehatan.</li><li>Klinik harus memperhatikan kepatuhan seluruh pemberi pelayanan dalam melakukan kebersihan tangan sesuai dengan ketentuan WHO.</li></ol>" },
+            { term: "Dimensi Mutu", desc: "Keselamatan" },
+            { term: "Tujuan", desc: "Mengukur kepatuhan pemberi layanan kesehatan sebagai dasar untuk memperbaiki dan meningkatkan kepatuhan agar dapat menjamin keselamatan petugas dan pasien/pengguna layanan dengan cara mengurangi risiko infeksi yang terkait pelayanan kesehatan." },
+            { term: "Definisi Operasional", desc: "<ol class='list-decimal pl-5 space-y-2'><li>Kebersihan tangan dilakukan dengan mencuci tangan menggunakan sabun dan air mengalir bila tangan tampak kotor atau terkena cairan tubuh, atau menggunakan alkohol (alcohol-based handrubs) dengan kandungan alkohol 60-80% bila tangan tidak tampak kotor.</li><li>Kebersihan tangan yang dilakukan dengan benar adalah kebersihan tangan sesuai indikasi dan langkah kebersihan tangan sesuai rekomendasi WHO.</li><li>Indikasi adalah alasan mengapa kebersihan tangan dilakukan pada saat tertentu sebagai upaya untuk menghentikan penularan mikroba selama perawatan.</li><li class='highlight-list-item'>Lima Indikasi (five moment) kebersihan tangan terdiri dari: <ul class='list-disc pl-5 mt-1 font-normal'><li>Sebelum kontak dengan pasien.</li><li>Sesudah kontak dengan pasien.</li><li>Sebelum melakukan prosedur aseptik.</li><li>Setelah bersentuhan dengan cairan tubuh pasien.</li><li>Setelah bersentuhan dengan lingkungan pasien.</li></ul></li><li>Peluang adalah periode di antara indikasi di mana tangan terpapar kuman.</li><li>Tindakan kebersihan tangan yang dilakukan adalah kebersihan tangan yang dilakukan sesuai peluang yang diindikasikan.</li><li>Penilaian kepatuhan kebersihan tangan adalah penilaian kepatuhan pemberi pelayanan yang melakukan kebersihan tangan dengan benar.</li><li>Observer adalah orang yang melakukan observasi atau penilaian kepatuhan.</li><li class='highlight-list-item'>Periode observasi adalah kurun waktu yang digunakan untuk mendapatkan minimal 200 peluang kebersihan tangan sesuai dengan waktu yang ditentukan untuk melakukan observasi dalam satu bulan.</li><li class='highlight-list-item'>Sesi adalah waktu yang dibutuhkan untuk melakukan observasi maksimal 20 menit (rerata 10 menit).</li><li>Jumlah pemberi pelayanan yang diobservasi adalah jumlah pemberi pelayanan dalam satu periode observasi.</li><li class='highlight-list-item'>Jumlah pemberi pelayanan yang diobservasi pada waktu observasi tidak boleh lebih dari 3 orang agar dapat mencatat semua indikasi kegiatan yang dilakukan.</li></ol>" },
+            { term: "Jenis Indikator", desc: "Proses" },
+            { term: "Satuan Pengukuran", desc: "Persentase" },
+            { term: "Numerator (pembilang)", desc: "Jumlah tindakan kebersihan tangan yang dilakukan." },
+            { term: "Denominator (penyebut)", desc: "Jumlah total peluang kebersihan tangan yang seharusnya dilakukan dalam periode observasi." },
+            { term: "Target Pencapaian", desc: "≥85%" },
+            { term: "Kriteria", highlight: true, desc: "<strong>Inklusi:</strong> Seluruh peluang yang dimiliki pemberi pelayanan yang terindikasi harus melakukan kebersihan tangan.<br><strong>Eksklusi:</strong> Tidak ada." },
+            { term: "Formula", desc: "(Jumlah tindakan kebersihan tangan yang dilakukan / Jumlah total peluang kebersihan tangan yang seharusnya dilakukan) x 100%" },
+            { term: "Metode Pengumpulan Data", desc: "Observasi" },
+            { term: "Sumber Data", desc: "Hasil observasi" },
+            { term: "Instrumen Pengambilan Data", highlight: true, desc: "Formulir Kepatuhan Kebersihan Tangan" },
+            { term: "Besar Sampel", highlight: true, desc: "Minimal 200 Peluang" },
+            { term: "Cara Pengambilan Sampel", desc: "Non probability Sampling-Consecutive sampling" },
+            { term: "Periode Pengumpulan Data", desc: "Bulanan" },
+            { term: "Penyajian Data", desc: "Tabel, Run chart" },
+            { term: "Periode Analisis dan Pelaporan", desc: "Bulanan, Triwulanan, Tahunan" },
+            { term: "Penanggung Jawab", desc: "Penanggung jawab mutu" },
+        ]
+    },
+    "penggunaan_apd": {
+        title: "Kepatuhan Penggunaan APD",
+        icon: "🛡️",
+        targetValue: 100,
+        targetDisplay: "100%",
+        dimension: "Keselamatan",
+        color: "#22c55e",
+        profile: [
+            { term: "Dasar Pemikiran", desc: "Berdasarkan Peraturan dan Keputusan Menteri Kesehatan serta Pedoman Teknis terkait Keselamatan Pasien, PPI, K3, dan penanggulangan wabah. Klinik harus memperhatikan kepatuhan penggunaan APD." },
+            { term: "Dimensi Mutu", desc: "Keselamatan" },
+            { term: "Tujuan", desc: "Mengukur kepatuhan petugas dalam menggunakan APD untuk menjamin keselamatan petugas dan pengguna layanan dengan mengurangi risiko infeksi." },
+            { term: "Definisi Operasional", desc: "<ol class='list-decimal pl-5 space-y-2'><li>Alat pelindung diri (APD) adalah perangkat alat yang dirancang sebagai penghalang terhadap penetrasi zat, partikel padat, cair, atau udara untuk melindungi pemakainya dari cedera atau transmisi infeksi atau penyakit.</li><li class='highlight-list-item'>Kepatuhan penggunaan APD adalah kepatuhan petugas dalam menggunakan APD dengan tepat sesuai dengan indikasi ketika melakukan tindakan yang memungkinkan tubuh atau membran mukosa terkena atau terpercik darah atau cairan tubuh atau cairan infeksius lainnya berdasarkan jenis risiko transmisi (kontak, droplet dan airborne).</li><li class='highlight-list-item'>Penilaian kepatuhan penggunaan APD adalah penilaian petugas dalam menggunakan APD sesuai indikasi.</li><li>Petugas adalah seluruh tenaga yang terindikasi menggunakan APD, contoh dokter, dokter gigi, bidan, perawat, dan petugas laboratorium.</li><li>Observer adalah orang yang melakukan observasi atau penilaian kepatuhan dengan metode dan tool yang telah ditentukan.</li><li>Periode observasi adalah waktu yang digunakan untuk melakukan pengamatan.</li></ol>" },
+            { term: "Jenis Indikator", desc: "Proses" },
+            { term: "Satuan Pengukuran", desc: "Persentase" },
+            { term: "Numerator (pembilang)", desc: "Jumlah petugas yang patuh menggunakan APD sesuai indikasi dalam periode observasi." },
+            { term: "Denominator (penyebut)", desc: "Jumlah seluruh petugas yang terindikasi menggunakan APD dalam periode observasi." },
+            { term: "Target Pencapaian", desc: "100%" },
+            { term: "Kriteria", highlight: true, desc: "<strong>Inklusi:</strong> Semua petugas yang terindikasi harus menggunakan APD.<br><strong>Eksklusi:</strong> Tidak ada." },
+            { term: "Formula", desc: "(Jumlah petugas yang patuh menggunakan APD sesuai indikasi / Jumlah seluruh petugas yang terindikasi menggunakan APD dalam periode observasi) x 100%" },
+            { term: "Metode Pengumpulan Data", desc: "Observasi" },
+            { term: "Sumber Data", desc: "Hasil observasi" },
+            { term: "Instrumen Pengambilan Data", highlight: true, desc: "Formulir Observasi Kepatuhan Penggunaan APD" },
+            { term: "Besar Sampel", highlight: true, desc: "1. Total sampel (apabila jumlah populasi ≤30)<br>2. Rumus Slovin (apabila jumlah populasi >30)" },
+            { term: "Cara Pengambilan Sampel", desc: "Non Probability Sampling-Consecutive Sampling" },
+            { term: "Periode Pengumpulan Data", desc: "Bulanan" },
+            { term: "Penyajian Data", desc: "Tabel, Run chart" },
+            { term: "Periode Analisis dan Pelaporan", desc: "Bulanan, Triwulanan, Tahunan" },
+            { term: "Penanggung Jawab", desc: "Penanggung jawab mutu" },
+        ]
+    },
+    "identifikasi_pasien": {
+        title: "Kepatuhan Identifikasi Pasien",
+        icon: "📛",
+        targetValue: 100,
+        targetDisplay: "100%",
+        dimension: "Keselamatan",
+        color: "#facc15",
+        profile: [
+            { term: "Dasar Pemikiran", desc: "Berdasarkan Peraturan Menteri Kesehatan mengenai Keselamatan Pasien, ketepatan identifikasi sangat penting untuk mencegah insiden keselamatan pasien." },
+            { term: "Dimensi Mutu", desc: "Keselamatan" },
+            { term: "Tujuan", desc: "Mengukur kepatuhan pemberi pelayanan untuk melakukan identifikasi pasien dalam melakukan tindakan pelayanan." },
+            { term: "Definisi Operasional", desc: "<ol class='list-decimal pl-5 space-y-2'><li>Pemberi pelayanan terdiri dari tenaga medis dan tenaga kesehatan.</li><li>Identifikasi pasien secara benar adalah proses identifikasi yang dilakukan pemberi pelayanan dengan menggunakan minimal dua penanda identitas seperti: nama lengkap, tanggal lahir, nomor rekam medik, NIK sesuai dengan yang ditetapkan di Klinik.</li><li class='highlight-list-item'>Identifikasi dilakukan dengan cara visual (melihat) dan atau verbal (lisan).</li><li class='highlight-list-item'>Pemberi pelayanan melakukan identifikasi pasien secara benar pada setiap keadaan terkait tindakan intervensi pasien seperti:<br>a. Pemberian pengobatan: pemberian obat, pemberian cairan intravena.<br>b. Prosedur tindakan: pencabutan gigi, Imunisasi, pemasangan alat kontrasepsi, tindakan persalinan, dan kegawatdaruratan.<br>c. Prosedur diagnostik: pengambilan sampel.</li><li class='highlight-list-item'>Identifikasi pasien dianggap benar jika pemberi pelayanan melakukan identifikasi seluruh tindakan intervensi yang dilakukan dengan benar.</li></ol>" },
+            { term: "Jenis Indikator", desc: "Proses" },
+            { term: "Satuan Pengukuran", desc: "Persentase" },
+            { term: "Numerator (pembilang)", desc: "Jumlah pemberi pelayanan yang melakukan identifikasi pasien secara benar dalam periode observasi." },
+            { term: "Denominator (penyebut)", desc: "Jumlah pemberi pelayanan yang diobservasi dalam periode observasi." },
+            { term: "Target Pencapaian", desc: "100%" },
+            { term: "Kriteria", highlight: true, desc: "<strong>Inklusi:</strong> Semua pemberi pelayanan yang memberikan pelayanan kesehatan.<br><strong>Eksklusi:</strong> Tidak ada." },
+            { term: "Formula", desc: "(Jumlah pemberi pelayanan yang melakukan identifikasi pasien secara benar dalam periode observasi / Jumlah pemberi pelayanan yang diobservasi dalam periode observasi) x 100%" },
+            { term: "Metode Pengumpulan Data", desc: "Observasi" },
+            { term: "Sumber Data", desc: "Hasil observasi" },
+            { term: "Instrumen Pengambilan Data", highlight: true, desc: "Formulir Observasi Kepatuhan Identifikasi Pasien" },
+            { term: "Besar Sampel", highlight: true, desc: "1. Total sampel (apabila jumlah populasi ≤30)<br>2. Rumus Slovin (apabila jumlah populasi >30)" },
+            { term: "Cara Pengambilan Sampel", desc: "Non Probability Sampling-Consecutive Sampling" },
+            { term: "Periode Pengumpulan Data", desc: "Bulanan" },
+            { term: "Penyajian Data", desc: "Tabel, Run chart" },
+            { term: "Periode Analisis dan Pelaporan", desc: "Bulanan, Triwulanan, Tahunan" },
+            { term: "Penanggung Jawab", desc: "Penanggung Jawab Mutu" },
+        ]
+    },
+    "kepuasan_pasien": {
+        title: "Kepuasan Pasien",
+        icon: "😊",
+        targetValue: 76.61,
+        targetDisplay: ">76.61",
+        dimension: "Berorientasi pada Pasien",
+        color: "#a855f7",
+        profile: [
+            { term: "Dasar Pemikiran", desc: "Berdasarkan Undang-Undang mengenai pelayanan publik serta Peraturan Menteri terkait." },
+            { term: "Dimensi Mutu", desc: "Berorientasi kepada pasien" },
+            { term: "Tujuan", desc: "Mengukur tingkat kepuasan masyarakat sebagai dasar upaya peningkatan mutu pelayanan." },
+            { term: "Definisi Operasional", desc: "<ol class='list-decimal pl-5 space-y-2'><li>Kepuasan pasien adalah hasil pendapat dan penilaian pasien terhadap kinerja pelayanan yang diberikan oleh fasilitas pelayanan kesehatan.</li><li>Responden adalah pasien yang pada saat survei sedang berada di lokasi unit pelayanan, atau yang pernah menerima pelayanan.</li><li class='highlight-list-item'>Besaran sampel ditentukan dengan menggunakan sampel dari Krejcie dan Morgan.</li><li>Survei Kepuasan Pasien adalah kegiatan pengukuran secara komprehensif tentang tingkat kepuasan pasien terhadap kualitas layanan yang diberikan oleh fasilitas pelayanan kesehatan kepada pasien.</li><li>Unsur pelayanan adalah faktor atau aspek yang terdapat dalam penyelenggaraan pelayanan sebagai variabel penyusunan survei kepuasan untuk mengetahui kinerja unit pelayanan.</li><li class='highlight-list-item'>Unsur survei kepuasan pasien dalam peraturan ini meliputi:<br>a. Persyaratan.<br>b. Sistem, Mekanisme, dan Prosedur.<br>c. Waktu Penyelesaian.<br>d. Biaya/Tarif.<br>e. Produk Spesifikasi Jenis Pelayanan.<br>f. Kompetensi Pelaksana.<br>g. Perilaku Pelaksana.<br>h. Penanganan Pengaduan, Saran dan Masukan.<br>i. Sarana dan prasarana.</li><li>Indeks Kepuasan adalah hasil pengukuran dari kegiatan Survei Kepuasan berupa angka.</li></ol>" },
+            { term: "Jenis Indikator", desc: "Outcome" },
+            { term: "Satuan Pengukuran", desc: "Indeks" },
+            { term: "Numerator (pembilang)", desc: "Tidak ada" },
+            { term: "Denominator (penyebut)", desc: "Tidak ada" },
+            { term: "Target Pencapaian", desc: "&gt;76.61" },
+            { term: "Kriteria", highlight: true, desc: "<strong>Inklusi:</strong> Seluruh pasien.<br><strong>Eksklusi:</strong> Pasien yang tidak kompeten dalam mengisi kuesioner dan/atau tidak ada keluarga yang mendampingi." },
+            { term: "Formula", desc: "(Total nilai persepsi seluruh responden / Total unsur yang terisi dari seluruh responden) x 25" },
+            { term: "Metode Pengumpulan Data", desc: "Survei" },
+            { term: "Sumber Data", desc: "Hasil survei" },
+            { term: "Instrumen Pengambilan Data", highlight: true, desc: "Kuisioner" },
+            { term: "Besar Sampel", highlight: true, desc: "Sesuai tabel Sampel Krejcie dan Morgan" },
+            { term: "Cara Pengambilan Sampel", desc: "Stratified Random Sampling" },
+            { term: "Periode Pengumpulan Data", highlight: true, desc: "Semesteran" },
+            { term: "Penyajian Data", desc: "Tabel, Run chart" },
+            { term: "Periode Analisis dan Pelaporan", desc: "Semesteran, Tahunan" },
+            { term: "Penanggung Jawab", desc: "Penanggung Jawab Mutu" },
+        ]
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.getElementById('dashboard-grid');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    function createChart(canvas, data, color) {
+        const remaining = 100 - data;
+        new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [data, remaining > 0 ? remaining : 0],
+                    backgroundColor: [color, '#e5e7eb'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '80%',
+                plugins: {
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+    }
+
+    function openModal(indicatorId) {
+        const data = indicatorData[indicatorId];
+        if (!data) return;
+
+        modalTitle.textContent = data.title;
+        let bodyHtml = '<dl class="inm-grid">';
+        data.profile.forEach(item => {
+            const highlightClass = item.highlight ? 'highlight-row' : '';
+            bodyHtml += `<div class="${highlightClass}"><dt>${item.term}</dt><dd>${item.desc}</dd></div>`;
+        });
+        bodyHtml += '</dl>';
+        modalBody.innerHTML = bodyHtml;
+        modal.classList.add('visible');
+    }
+
+    function closeModal() {
+        modal.classList.remove('visible');
+    }
+
+    Object.keys(indicatorData).forEach(key => {
+        const indicator = indicatorData[key];
+        const card = document.createElement('div');
+        card.className = 'bg-white p-6 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center text-center';
+        
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container relative mb-4';
+        const canvas = document.createElement('canvas');
+        chartContainer.appendChild(canvas);
+
+        const chartLabel = document.createElement('div');
+        chartLabel.className = 'absolute inset-0 flex flex-col items-center justify-center font-bold';
+        chartLabel.innerHTML = `<span class="text-2xl" style="color:${indicator.color};">${indicator.targetDisplay}</span><span class="text-xs text-slate-500">Target</span>`;
+        chartContainer.appendChild(chartLabel);
+        
+        card.innerHTML = `
+            <div class="flex items-center justify-center mb-4 text-3xl">${indicator.icon}</div>
+            <h2 class="text-xl font-bold mb-2">${indicator.title}</h2>
+            <p class="text-slate-500 text-sm mb-4">Dimensi Mutu: ${indicator.dimension}</p>
+        `;
+        card.appendChild(chartContainer);
+
+        const button = document.createElement('button');
+        button.className = 'mt-auto bg-slate-100 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-200 transition-colors w-full';
+        button.textContent = 'Lihat Detail';
+        card.appendChild(button);
+        
+        card.addEventListener('click', () => openModal(key));
+        grid.appendChild(card);
+        createChart(canvas, indicator.targetValue, indicator.color);
+    });
+
+    modalCloseBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+});
+</script>
+
+</body>
+</html>
