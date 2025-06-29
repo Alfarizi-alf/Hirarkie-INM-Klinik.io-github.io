@@ -9,10 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Calm Harmony (Slate, Blue, Green, Yellow, Purple) -->
-    <!-- Application Structure Plan: Aplikasi ini dirancang sebagai dasbor satu halaman dengan empat kartu utama yang mewakili setiap indikator mutu. Pendekatan ini memungkinkan pengguna untuk mendapatkan gambaran umum yang cepat. Saat pengguna memerlukan detail, mereka dapat mengklik sebuah kartu untuk membuka jendela modal yang menampilkan profil lengkap indikator tersebut. Struktur ini dipilih karena sangat efisien dalam menyajikan informasi: ringkas di awal, dan detail saat dibutuhkan, tanpa navigasi halaman yang kompleks. Alur ini sangat intuitif dan berorientasi pada tugas untuk pengguna yang ingin memahami atau memverifikasi detail spesifik dari suatu indikator. -->
-    <!-- Visualization & Content Choices: 1. [Ringkasan Indikator] -> Tujuan: Memberikan gambaran cepat & visual tentang target setiap indikator. -> Viz: Kartu (HTML/Tailwind) dengan Donut Chart (Chart.js/Canvas) di dalamnya. -> Interaksi: Klik pada kartu untuk membuka detail. -> Justifikasi: Donut chart adalah cara yang efektif dan hemat ruang untuk memvisualisasikan persentase target. 2. [Detail Indikator] -> Tujuan: Menyajikan seluruh informasi profil secara terstruktur dan mudah dibaca, dengan penekanan yang lebih spesifik pada poin-poin kunci. -> Viz: Tampilan modal dengan daftar definisi (HTML/dl) yang rapi. Poin-poin paling krusial diberi highlight latar belakang, sementara frasa kunci di dalam teks diberi warna berbeda. -> Interaksi: Tombol tutup. -> Justifikasi: Highlight yang lebih spesifik dan bertingkat membantu pengguna membedakan dan fokus pada elemen terpenting untuk pengukuran, meminimalkan risiko kesalahan interpretasi sesuai permintaan. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -99,11 +95,16 @@
         <header class="text-center mb-10">
             <h1 class="text-3xl md:text-4xl font-bold">Dasbor Indikator Mutu Klinik</h1>
             <p class="mt-2 text-lg text-slate-600">Ringkasan Interaktif Profil Indikator Mutu Nasional (INM)</p>
-        </header>
+
+            <div class="mt-6">
+                <a href="index.html" class="inline-block bg-sky-500 text-white font-bold py-2 px-6 rounded-full hover:bg-sky-600 transition-transform transform hover:scale-105">
+                    ← Kembali ke Dasbor Akreditasi
+                </a>
+            </div>
+            </header>
 
         <main id="dashboard-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Cards will be injected here by JavaScript -->
-        </main>
+            </main>
     </div>
 
     <div id="modal" class="modal-overlay">
@@ -117,6 +118,7 @@
     </div>
 
 <script>
+// Seluruh JavaScript dari file asli tidak diubah
 const indicatorData = {
     "kebersihan_tangan": {
         title: "Kepatuhan Kebersihan Tangan",
