@@ -9,10 +9,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Refined Neutrals (Slate, Sky, Emerald) -->
-    <!-- Application Structure Plan: Aplikasi ini menggunakan struktur berbasis tab untuk memisahkan tiga fungsi utama: 'Dashboard' untuk ringkasan visual, 'Penjelajah Standar' untuk eksplorasi hierarki standar secara interaktif, dan 'Inventarisasi Bukti' untuk daftar periksa yang terfokus. Struktur ini dipilih untuk memecah informasi yang padat menjadi bagian-bagian yang mudah dikelola, memungkinkan pengguna dengan peran berbeda (misalnya, manajer vs. staf pelaksana) untuk menemukan informasi yang relevan dengan cepat. Alur pengguna dimulai dari gambaran umum di dasbor, kemudian dapat menelusuri detail di penjelajah, atau langsung ke daftar tugas di inventaris, menciptakan pengalaman yang fleksibel dan berorientasi pada tugas. -->
-    <!-- Visualization & Content Choices: 1. [Dashboard] - Tujuan: Menjelaskan distribusi beban kerja per Bab. Viz: Pie Chart (Chart.js) menampilkan proporsi Standar per Bab. Kartu Informasi (HTML/Tailwind) mendefinisikan fungsi RDOWS. Interaksi: Tooltip pada chart. Justifikasi: Memberikan gambaran visual yang jelas tentang skala setiap Bab. 2. [Penjelajah Standar] - Tujuan: Mengurai hierarki kompleks. Viz: Accordion interaktif. Interaksi: Klik untuk membuka/menutup detail. Justifikasi: Menyajikan konten sumber secara utuh. 3. [Inventarisasi Bukti] - Tujuan: Menyediakan daftar periksa praktis sesuai pengelompokan asli. Viz: Daftar terstruktur yang difilter per tab. Interaksi: Navigasi tab. Justifikasi: Mempertahankan struktur dan kelengkapan konten asli dari dokumen sumber untuk konsistensi. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -62,7 +58,13 @@
         <header class="text-center mb-10">
             <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Dasbor Interaktif Akreditasi Klinik</h1>
             <p class="mt-2 text-lg text-slate-600">Alat bantu visual untuk memahami dan mempersiapkan standar akreditasi.</p>
-        </header>
+            
+            <div class="mt-6">
+                <a href="index2.html" class="inline-block bg-emerald-500 text-white font-bold py-2 px-6 rounded-full hover:bg-emerald-600 transition-transform transform hover:scale-105">
+                    → Buka Dasbor Indikator Mutu
+                </a>
+            </div>
+            </header>
 
         <nav class="mb-10">
             <div class="flex justify-center border border-slate-300 rounded-full p-1 bg-white/70 backdrop-blur-sm shadow-sm max-w-md mx-auto">
@@ -73,7 +75,6 @@
         </nav>
 
         <main id="content-area">
-            <!-- Dashboard View -->
             <div id="view-dashboard" class="view fade-in">
                  <section class="text-center mb-12">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">Distribusi Beban Kerja per Bab</h2>
@@ -121,7 +122,6 @@
 
             </div>
 
-            <!-- Explorer View -->
             <div id="view-explorer" class="view hidden fade-in">
                 <section class="text-center mb-8">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">Penjelajah Standar Akreditasi</h2>
@@ -132,7 +132,6 @@
                 <div id="explorer-content" class="bg-white p-4 sm:p-6 rounded-xl shadow-md"></div>
             </div>
 
-            <!-- Inventory View -->
             <div id="view-inventory" class="view hidden fade-in">
                 <section class="text-center mb-8">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">Inventarisasi Bukti RDOWS</h2>
@@ -159,6 +158,7 @@
     </div>
 
 <script>
+// Seluruh JavaScript dari file asli tidak diubah
 const accreditationData = {
     "TKK": {
         "title": "BAB I: TATA KELOLA KLINIK", "icon": "🏛️", "color": "sky", "standards": [
